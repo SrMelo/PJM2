@@ -1,0 +1,134 @@
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import confetti from "canvas-confetti";
+
+const winners = [
+  { number: 17, name: "Agatha" },
+  { number: 47, name: "Monica" },
+  { number: 85, name: "Maura" },
+  { number: 4, name: "Pablo" },
+  { number: 4, name: "Pablo" }
+];
+
+let round = 0;
+
+const generateComplexRandom = () => {
+  const winnerData = winners[round % winners.length];
+  const winnerNumber = winnerData.number;
+
+  const randoms = Array.from({ length: 20 }, () =>
+    Math.floor(Math.pow(Math.random(), 0.5) * 100) + 1
+  );
+
+  const weightedInsert = [...randoms.slice(0, 10), winnerNumber, ...randoms.slice(10)];
+
+  for (let k = 0; k < 3; k++) {
+    for (let i = weightedInsert.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [weightedInsert[i], weightedInsert[j]] = [weightedInsert[j], weightedInsert[i]];
+    }
+  }
+
+  return {
+    sequence: weightedInsert,
+    winner: winnerNumber,
+    winnerName: winnerData.name
+  };
+};
+
+export default function RandomDrawApp() {
+  const [result, setResult] = useState(null);
+  const [showWinner, setShowWinner] = useState(false);
+
+  const handleDraw = () => {
+    const data = generateComplexRandom();
+    setResult(data);
+    setShowWinner(false);
+    setTimeout(() => {
+      setShowWinner(true);
+    }, data.sequence.length * 150);
+    round++;
+  };
+
+  useEffect(() => {
+    if (showWinner) {
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 }
+      });
+    }
+  }, [showWinner]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-800 to-black text-white p-4 relative overflow-hidden">
+      {/* Balões animados */}
+      {showWinner && (
+        <>
+          {[...Array(10)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute bottom-0 w-6 h-8 rounded-full bg-pink-300 opacity-70"
+              style={{
+                left: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [-10, -window.innerHeight],
+                opacity: [1, 0]
+              }}
+              transition={{
+                duration: 5 + Math.random() * 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.2
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      <Card className="p-6 w-full max-w-md text-center shadow-xl rounded-2xl z-10">
+        <CardContent>
+          <h1 className="text-2xl font-bold mb-4">Sorteio Aleatório Complexo</h1>
+          <Button onClick={handleDraw} className="mb-6">Sortear Número</Button>
+          {result && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-5 gap-2 justify-center">
+                {result.sequence.map((num, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: [0, -10, 0] }}
+                    transition={{
+                      delay: index * 0.15,
+                      duration: 0.6,
+                      repeat: Infinity,
+                      repeatDelay: 2,
+                      repeatType: "loop",
+                      ease: "easeInOut"
+                    }}
+                    className="bg-white text-black rounded-xl px-3 py-2 shadow text-sm"
+                  >
+                    {num}
+                  </motion.div>
+                ))}
+              </div>
+              {showWinner && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 1 }}
+                  className="mt-4 text-2xl font-bold text-green-400"
+                >
+                  Número Vencedor: {result.winner} – Parabéns {result.winnerName}!
+                </motion.div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
